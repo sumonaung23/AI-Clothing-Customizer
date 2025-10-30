@@ -1,9 +1,8 @@
-
 import React, { useState, useRef, useCallback } from 'react';
 
 import { CanvasEditor, CanvasEditorRef } from './components/CanvasEditor';
 import { ControlPanel } from './components/ControlPanel';
-import type { GarmentView, SelectedObjectInfo } from './types';
+import type { GarmentView, SelectedObjectInfo, FilterType } from './types';
 import { GARMENT_VIEWS, PRINTABLE_AREAS } from './constants';
 import { removeBackground as removeBgService } from './services/geminiService';
 import { Header } from './components/Header';
@@ -56,6 +55,10 @@ export default function App() {
     canvasEditorRef.current?.clearCanvas();
   };
 
+  const handleApplyFilter = (filter: FilterType) => {
+    canvasEditorRef.current?.applyFilter(filter);
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 text-gray-800">
       <Header />
@@ -81,6 +84,7 @@ export default function App() {
               apiError={error}
               onDeleteSelected={handleDeleteSelected}
               onClearCanvas={handleClearCanvas}
+              onApplyFilter={handleApplyFilter}
             />
           </div>
         </div>

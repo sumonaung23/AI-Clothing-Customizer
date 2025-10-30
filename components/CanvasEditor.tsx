@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useImperativeHandle, forwardRef, useState } from 'react';
 import * as fabric from 'fabric';
-import type { PrintableArea, SelectedObjectInfo } from '../types';
+import type { PrintableArea, SelectedObjectInfo, FilterType } from '../types';
 import { PPI_THRESHOLD } from '../constants';
 
 interface CanvasEditorProps {
@@ -15,6 +15,7 @@ export interface CanvasEditorRef {
   updateImage: (newUrl: string) => void;
   deleteSelected: () => void;
   clearCanvas: () => void;
+  applyFilter: (filter: FilterType) => void;
 }
 
 export const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>((props, ref) => {
@@ -82,7 +83,6 @@ export const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>((prop
     fabricCanvasRef.current = canvas;
 
     // Set garment background
-    // FIX: Updated fabric.Image.fromURL to use promise-based syntax for Fabric.js v5+ and corrected setBackgroundImage to use the backgroundImage property.
     fabric.Image.fromURL(garmentImageUrl, { crossOrigin: 'anonymous' }).then(img => {
         img.scaleToWidth(canvas.getWidth());
         img.scaleToHeight(canvas.getHeight());
@@ -108,9 +108,9 @@ export const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>((prop
     });
     canvas.add(rect);
 
-    // FIX: Changed IEvent to TEvent for Fabric.js v5+.
+    // FIX: Using fabric.TEvent as fabric.IEvent is not exported in this version.
     const onObjectModified = (e: fabric.TEvent) => {
-        const obj = e.target;
+        const obj = (e as any).target as fabric.Object;
         if (!obj) return;
         
         // Bounding box for printable area
@@ -137,9 +137,10 @@ export const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>((prop
     canvas.on('object:modified', onObjectModified);
     canvas.on('object:scaling', onObjectModified);
 
-    // FIX: Changed IEvent to TEvent for Fabric.js v5+.
+    // FIX: Using fabric.TEvent as fabric.IEvent is not exported in this version.
     const handleSelection = (e: fabric.TEvent) => {
-      onObjectSelected(e.target ? getObjectInfo(e.target) : null);
+      // FIX: Cast e.target to fabric.Object to satisfy getObjectInfo function signature
+      onObjectSelected((e as any).target ? getObjectInfo((e as any).target as fabric.Object) : null);
     };
 
     canvas.on('selection:created', handleSelection);
@@ -174,7 +175,6 @@ export const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>((prop
     addImage: (url, fileType) => {
         const canvas = fabricCanvasRef.current;
         if (!canvas) return;
-        // FIX: Updated fabric.Image.fromURL to use promise-based syntax for Fabric.js v5+.
         fabric.Image.fromURL(url, { crossOrigin: 'anonymous' }).then(img => {
             img.scaleToWidth(printableArea.width / 2);
             img.set({
@@ -201,7 +201,6 @@ export const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>((prop
                 scaleX: img.scaleX, scaleY: img.scaleY,
             };
             
-            // FIX: Updated fabric.Image.fromURL to use promise-based syntax for Fabric.js v5+.
             fabric.Image.fromURL(newUrl, { crossOrigin: 'anonymous' }).then(newImg => {
                 newImg.set(originalProps);
                 (newImg as any).src = newUrl;
@@ -234,6 +233,37 @@ export const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>((prop
             canvas.renderAll();
             onObjectSelected(null);
         }
+    },
+    applyFilter: (filter: FilterType) => {
+      const canvas = fabricCanvasRef.current;
+      if (!canvas) return;
+      const activeObject = canvas.getActiveObject();
+
+      if (activeObject && activeObject.type === 'image') {
+        const image = activeObject as InstanceType<typeof fabric.Image>;
+        image.filters = []; // Clear existing filters
+
+        switch (filter) {
+          case 'grayscale':
+            image.filters.push(new fabric.filters.Grayscale());
+            break;
+          case 'sepia':
+            image.filters.push(new fabric.filters.Sepia());
+            break;
+          case 'invert':
+            image.filters.push(new fabric.filters.Invert());
+            break;
+          case 'vintage':
+            image.filters.push(new fabric.filters.Vintage());
+            break;
+          case 'none':
+            // Filters are already cleared, do nothing.
+            break;
+        }
+
+        image.applyFilters();
+        canvas.renderAll();
+      }
     }
   }));
 

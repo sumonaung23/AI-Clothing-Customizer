@@ -1,4 +1,3 @@
-
 export type GarmentView = 'front' | 'back';
 
 export interface PrintableArea {
@@ -19,3 +18,5 @@ export interface SelectedObjectInfo {
   ppi?: number;
   qualityWarning: boolean;
 }
+
+export type FilterType = 'none' | 'grayscale' | 'sepia' | 'invert' | 'vintage';
