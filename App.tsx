@@ -1,6 +1,5 @@
 
 import React, { useState, useRef, useCallback } from 'react';
-import type { fabric } from 'fabric';
 
 import { CanvasEditor, CanvasEditorRef } from './components/CanvasEditor';
 import { ControlPanel } from './components/ControlPanel';

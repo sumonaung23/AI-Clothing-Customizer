@@ -82,14 +82,17 @@ export const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>((prop
     fabricCanvasRef.current = canvas;
 
     // Set garment background
-    fabric.Image.fromURL(garmentImageUrl, (img) => {
+    // FIX: Updated fabric.Image.fromURL to use promise-based syntax for Fabric.js v5+ and corrected setBackgroundImage to use the backgroundImage property.
+    fabric.Image.fromURL(garmentImageUrl, { crossOrigin: 'anonymous' }).then(img => {
         img.scaleToWidth(canvas.getWidth());
         img.scaleToHeight(canvas.getHeight());
-        canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas), {
+        img.set({
           originX: 'left',
           originY: 'top',
         });
-    }, { crossOrigin: 'anonymous' });
+        canvas.backgroundImage = img;
+        canvas.renderAll();
+    });
 
     // Draw printable area
     const rect = new fabric.Rect({
@@ -105,7 +108,8 @@ export const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>((prop
     });
     canvas.add(rect);
 
-    const onObjectModified = (e: fabric.IEvent) => {
+    // FIX: Changed IEvent to TEvent for Fabric.js v5+.
+    const onObjectModified = (e: fabric.TEvent) => {
         const obj = e.target;
         if (!obj) return;
         
@@ -133,7 +137,8 @@ export const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>((prop
     canvas.on('object:modified', onObjectModified);
     canvas.on('object:scaling', onObjectModified);
 
-    const handleSelection = (e: fabric.IEvent) => {
+    // FIX: Changed IEvent to TEvent for Fabric.js v5+.
+    const handleSelection = (e: fabric.TEvent) => {
       onObjectSelected(e.target ? getObjectInfo(e.target) : null);
     };
 
@@ -162,13 +167,15 @@ export const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>((prop
         originX: 'center',
         originY: 'center',
       });
-      canvas.add(textObj).setActiveObject(textObj);
+      canvas.add(textObj);
+      canvas.setActiveObject(textObj);
       canvas.renderAll();
     },
     addImage: (url, fileType) => {
         const canvas = fabricCanvasRef.current;
         if (!canvas) return;
-        fabric.Image.fromURL(url, (img) => {
+        // FIX: Updated fabric.Image.fromURL to use promise-based syntax for Fabric.js v5+.
+        fabric.Image.fromURL(url, { crossOrigin: 'anonymous' }).then(img => {
             img.scaleToWidth(printableArea.width / 2);
             img.set({
                 left: printableArea.left + printableArea.width / 2,
@@ -178,9 +185,10 @@ export const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>((prop
             });
             (img as any).src = url; // Store original src
             (img as any).fileType = fileType;
-            canvas.add(img).setActiveObject(img);
+            canvas.add(img);
+            canvas.setActiveObject(img);
             canvas.renderAll();
-        }, { crossOrigin: 'anonymous' });
+        });
     },
     updateImage: (newUrl: string) => {
         const canvas = fabricCanvasRef.current;
@@ -193,14 +201,16 @@ export const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>((prop
                 scaleX: img.scaleX, scaleY: img.scaleY,
             };
             
-            fabric.Image.fromURL(newUrl, (newImg) => {
+            // FIX: Updated fabric.Image.fromURL to use promise-based syntax for Fabric.js v5+.
+            fabric.Image.fromURL(newUrl, { crossOrigin: 'anonymous' }).then(newImg => {
                 newImg.set(originalProps);
                 (newImg as any).src = newUrl;
                 (newImg as any).fileType = 'image/png'; // After bg removal it's png
                 canvas.remove(img);
-                canvas.add(newImg).setActiveObject(newImg);
+                canvas.add(newImg);
+                canvas.setActiveObject(newImg);
                 canvas.renderAll();
-            }, { crossOrigin: 'anonymous' });
+            });
         }
     },
     deleteSelected: () => {
