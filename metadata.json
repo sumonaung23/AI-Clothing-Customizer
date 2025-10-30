@@ -1,0 +1,5 @@
+{
+  "name": "AI Clothing Customizer",
+  "description": "An interactive web application that allows users to customize clothing by adding logos and text. Features include object manipulation (drag, resize, rotate), AI-powered background removal for logos, and real-time dimension calculations for print accuracy.",
+  "requestFramePermissions": []
+}
